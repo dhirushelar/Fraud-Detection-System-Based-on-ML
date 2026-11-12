@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fraud Detection System (FDS){% endblock %} | Alpha</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#151e2e',
+                            950: '#070d19',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('dashboard.static', filename='css/style.css') }}">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/80 border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand & Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white font-bold text-lg">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">Alpha FDS</span>
+                            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v1.0.0</span>
+                        </div>
+                        <p class="text-xs text-slate-400 hidden sm:block">Anomaly Detection & Risk Scoring Engine</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="flex items-center gap-1 sm:gap-2">
+                    <a href="{{ url_for('dashboard.overview') }}" 
+                       class="px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.endpoint == 'dashboard.overview' %}bg-indigo-600 text-white shadow-md shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-chart-line mr-1.5"></i> Overview
+                    </a>
+                    <a href="{{ url_for('dashboard.alerts_queue') }}" 
+                       class="px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.endpoint == 'dashboard.alerts_queue' %}bg-indigo-600 text-white shadow-md shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-bell mr-1.5"></i> Alert Queue
+                    </a>
+                    <a href="{{ url_for('dashboard.simulate') }}" 
+                       class="px-3 py-2 rounded-lg text-sm font-medium transition-all {% if request.endpoint == 'dashboard.simulate' %}bg-indigo-600 text-white shadow-md shadow-indigo-600/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i class="fa-solid fa-flask-vial mr-1.5"></i> Live Simulator
+                    </a>
+                    <a href="/api/v1/health" target="_blank"
+                       class="px-3 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all">
+                        <i class="fa-solid fa-heart-pulse mr-1.5"></i> Health
+                    </a>
+                </nav>
+
+                <!-- Engine Status Pill -->
+                <div class="hidden md:flex items-center gap-2 pl-4 border-l border-slate-800">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span class="text-xs text-slate-300 font-mono">IsolationForest Online</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Toast / Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="p-4 rounded-xl text-sm flex items-center justify-between border {% if category == 'success' %}bg-emerald-950/40 border-emerald-500/40 text-emerald-300{% elif category == 'error' %}bg-rose-950/40 border-rose-500/40 text-rose-300{% else %}bg-indigo-950/40 border-indigo-500/40 text-indigo-300{% endif %}">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'error' %}fa-triangle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+                                <span>{{ message }}</span>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="opacity-70 hover:opacity-100">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-800/80 bg-slate-900/50 py-6 text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span>© 2026 <strong>Alpha</strong> — Production Fraud Detection System.</span>
+                <span class="text-slate-600">|</span>
+                <span>Unsupervised Isolation Forest + TreeSHAP</span>
+            </div>
+            <div class="flex items-center gap-4 text-slate-400 font-mono">
+                <span>Latency SLA: &lt;50ms</span>
+                <span>•</span>
+                <span>PR-AUC: 0.662</span>
+                <span>•</span>
+                <span>ROC-AUC: 0.958</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Plotly rendering scripts block -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

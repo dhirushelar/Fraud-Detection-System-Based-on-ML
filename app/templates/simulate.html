@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction Scoring Simulator{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <a href="{{ url_for('dashboard.overview') }}" class="hover:text-white">Overview</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-indigo-400 font-semibold">Simulator</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Live Scoring Sandbox</h1>
+            <p class="text-sm text-slate-400 mt-1">Simulate live transaction events to evaluate real-time scoring behavior and SHAP reason code generation.</p>
+        </div>
+    </div>
+
+    <!-- Simulator Form & Live Results Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Input Form (5 cols) -->
+        <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-sm">
+            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-indigo-400"></i> Transaction Parameters
+            </h3>
+
+            <form action="{{ url_for('dashboard.simulate') }}" method="POST" class="space-y-4 text-xs">
+                <!-- Preset Archetypes Buttons -->
+                <div>
+                    <label class="block font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                        Quick Preset Fraud Archetypes:
+                    </label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setPreset('normal')" 
+                                class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors">
+                            Normal Grocery
+                        </button>
+                        <button type="button" onclick="setPreset('velocity')" 
+                                class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-medium transition-colors">
+                            Velocity Burst
+                        </button>
+                        <button type="button" onclick="setPreset('foreign')" 
+                                class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 font-medium transition-colors">
+                            Odd-Hour Foreign
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label for="amount" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        Transaction Amount ($ USD):
+                    </label>
+                    <input type="number" step="0.01" id="amount" name="amount" value="85.50" required
+                           class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Hour of Day -->
+                <div>
+                    <label for="hour" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        Hour of Day (0 - 23):
+                    </label>
+                    <input type="number" min="0" max="23" id="hour" name="hour" value="14" required
+                           class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Customer ID -->
+                <div>
+                    <label for="user_id" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        Cardholder Identifier:
+                    </label>
+                    <input type="text" id="user_id" name="user_id" value="usr_0001" required
+                           class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Merchant ID -->
+                <div>
+                    <label for="merchant_id" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                        Merchant Identifier:
+                    </label>
+                    <input type="text" id="merchant_id" name="merchant_id" value="mcht_0001" required
+                           class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <!-- Lat & Lon -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="lat" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">Latitude:</label>
+                        <input type="number" step="0.0001" id="lat" name="lat" value="40.7128" required
+                               class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="lon" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">Longitude:</label>
+                        <input type="number" step="0.0001" id="lon" name="lon" value="-74.0060" required
+                               class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Device ID & Channel -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="device_id" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">Device ID:</label>
+                        <input type="text" id="device_id" name="device_id" value="dev_iphone_safari" required
+                               class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white font-mono focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="channel" class="block font-semibold uppercase tracking-wider text-slate-400 mb-1">Channel:</label>
+                        <select id="channel" name="channel" 
+                                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            <option value="ONLINE">ONLINE</option>
+                            <option value="POS">POS</option>
+                            <option value="MOBILE">MOBILE</option>
+                            <option value="ATM">ATM</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-3">
+                    <button type="submit" 
+                            class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm transition-all shadow-md shadow-indigo-600/30">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Score Transaction via Pipeline</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Live Results & SHAP Explanation (7 cols) -->
+        <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            {% if result %}
+            <div class="space-y-6">
+                <!-- Result Header Card -->
+                <div class="p-5 rounded-2xl border {% if result.is_flagged %}bg-rose-950/20 border-rose-500/40{% else %}bg-emerald-950/20 border-emerald-500/40{% endif %} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs uppercase font-bold tracking-wider {% if result.is_flagged %}text-rose-400{% else %}text-emerald-400{% endif %}">
+                            Pipeline Decision Result
+                        </span>
+                        <h2 class="text-3xl font-black text-white font-mono mt-1">
+                            {{ result.decision }}
+                        </h2>
+                        <p class="text-xs text-slate-300 mt-1">
+                            Severity Level: <strong class="{% if result.is_flagged %}text-rose-300{% else %}text-emerald-300{% endif %}">{{ result.severity }}</strong>
+                        </p>
+                    </div>
+
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 font-semibold block">Calibrated Risk Score</span>
+                        <span class="text-4xl font-black font-mono {% if result.is_flagged %}text-rose-400{% else %}text-emerald-400{% endif %}">
+                            {{ "{:.1f}".format(result.risk_score) }} <span class="text-xs text-slate-400 font-normal">/ 100</span>
+                        </span>
+                        <span class="text-[11px] text-slate-500 font-mono block mt-1">Latency: {{ result.latency_ms }} ms</span>
+                    </div>
+                </div>
+
+                <!-- Reason Codes List -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        Generated SHAP Reason Codes:
+                    </h4>
+                    <div class="space-y-2">
+                        {% for r in result.reason_codes %}
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                            <div>
+                                <span class="font-bold text-rose-300 font-mono mr-2">{{ r.code }}:</span>
+                                <span class="text-slate-200">{{ r.description }}</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 font-bold text-[10px]">{{ r.impact }}</span>
+                        </div>
+                        {% else %}
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 text-center">
+                            Transaction cleared without anomaly reason codes.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Plotly SHAP Waterfall / Bar -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        Feature Importance Contributions:
+                    </h4>
+                    <div id="simShapChart" class="w-full h-56"></div>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Initial Blank State -->
+            <div class="h-full flex flex-col items-center justify-center py-24 text-center text-slate-500">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-microchip"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-300">Inference Engine Ready</h3>
+                <p class="text-xs text-slate-400 max-w-sm mt-1">
+                    Select a preset archetype on the left or customize parameters, then click <strong>Score Transaction</strong> to test live anomaly detection.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function setPreset(type) {
+        if (type === 'normal') {
+            document.getElementById('amount').value = 45.00;
+            document.getElementById('hour').value = 13;
+            document.getElementById('lat').value = 40.7128;
+            document.getElementById('lon').value = -74.0060;
+            document.getElementById('device_id').value = 'dev_iphone_safari';
+            document.getElementById('channel').value = 'POS';
+        } else if (type === 'velocity') {
+            document.getElementById('amount').value = 350.00;
+            document.getElementById('hour').value = 16;
+            document.getElementById('lat').value = 40.7150;
+            document.getElementById('lon').value = -74.0080;
+            document.getElementById('device_id').value = 'dev_iphone_safari';
+            document.getElementById('channel').value = 'ONLINE';
+        } else if (type === 'foreign') {
+            document.getElementById('amount').value = 6500.00;
+            document.getElementById('hour').value = 3;
+            document.getElementById('lat').value = 48.8566;
+            document.getElementById('lon').value = 2.3522;
+            document.getElementById('device_id').value = 'dev_unrecognized_foreign';
+            document.getElementById('channel').value = 'ONLINE';
+        }
+    }
+
+    {% if shap_chart_json %}
+    document.addEventListener("DOMContentLoaded", function () {
+        const shapData = {{ shap_chart_json | safe }};
+        const config = { responsive: true, displayModeBar: false };
+        Plotly.newPlot('simShapChart', shapData.data, shapData.layout, config);
+    });
+    {% endif %}
+</script>
+{% endblock %}

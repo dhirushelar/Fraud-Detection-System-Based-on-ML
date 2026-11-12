@@ -1,0 +1,110 @@
+{
+  "model_version": "v1.0.0",
+  "algorithm": "IsolationForest",
+  "contamination": 0.005,
+  "n_estimators": 150,
+  "decision_threshold": 81.5,
+  "feature_names": [
+    "amount",
+    "log_amount",
+    "hour",
+    "day_of_week",
+    "is_night",
+    "is_weekend",
+    "sin_hour",
+    "cos_hour",
+    "sin_day",
+    "cos_day",
+    "distance_from_last_tx_km",
+    "is_new_device",
+    "is_new_merchant",
+    "tx_velocity_1h",
+    "tx_velocity_24h",
+    "user_rolling_mean_amount",
+    "user_rolling_std_amount",
+    "amount_zscore",
+    "amount_to_mean_ratio"
+  ],
+  "metrics": {
+    "pr_auc": 0.6617,
+    "roc_auc": 0.9581,
+    "precision": 0.2727,
+    "recall": 0.8571,
+    "f1": 0.4138,
+    "threshold_used": 81.5,
+    "total_samples": 1000,
+    "true_positives": 6,
+    "false_positives": 16,
+    "true_negatives": 977,
+    "false_negatives": 1,
+    "false_alarm_rate": 0.0161,
+    "missed_fraud_rate": 0.1429
+  },
+  "cost_optimization": {
+    "optimal_threshold": 81.5,
+    "min_total_cost": 702.0,
+    "unmitigated_cost_no_model": 3150.0,
+    "net_cost_savings": 2448.0,
+    "roi_percentage": 77.71,
+    "cost_assumptions": {
+      "cost_fn": 450.0,
+      "cost_fp": 15.0,
+      "cost_tp": 2.0
+    },
+    "confusion_at_optimal": {
+      "tp": 6,
+      "fp": 16,
+      "fn": 1,
+      "tn": 977,
+      "precision": 0.2727,
+      "recall": 0.8571
+    }
+  },
+  "baseline_comparison": {
+    "lof": {
+      "pr_auc": 0.1883,
+      "roc_auc": 0.9815,
+      "precision": 0.0395,
+      "recall": 1.0,
+      "f1": 0.0761,
+      "threshold_used": 81.5,
+      "total_samples": 1000,
+      "true_positives": 7,
+      "false_positives": 170,
+      "true_negatives": 823,
+      "false_negatives": 0,
+      "false_alarm_rate": 0.1712,
+      "missed_fraud_rate": 0.0
+    },
+    "ocsvm": {
+      "pr_auc": 0.1948,
+      "roc_auc": 0.8267,
+      "precision": 0.1282,
+      "recall": 0.7143,
+      "f1": 0.2174,
+      "threshold_used": 81.5,
+      "total_samples": 1000,
+      "true_positives": 5,
+      "false_positives": 34,
+      "true_negatives": 959,
+      "false_negatives": 2,
+      "false_alarm_rate": 0.0342,
+      "missed_fraud_rate": 0.2857
+    },
+    "ensemble": {
+      "pr_auc": 0.7011,
+      "roc_auc": 0.9709,
+      "precision": 0.2941,
+      "recall": 0.7143,
+      "f1": 0.4167,
+      "threshold_used": 81.5,
+      "total_samples": 1000,
+      "true_positives": 5,
+      "false_positives": 12,
+      "true_negatives": 981,
+      "false_negatives": 2,
+      "false_alarm_rate": 0.0121,
+      "missed_fraud_rate": 0.2857
+    }
+  }
+}

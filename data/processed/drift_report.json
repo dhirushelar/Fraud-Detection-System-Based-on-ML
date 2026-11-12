@@ -1,0 +1,43 @@
+{
+  "is_drift_detected": false,
+  "psi_threshold": 0.25,
+  "ks_pvalue_threshold": 0.01,
+  "total_features_evaluated": 3,
+  "drifted_features_count": 0,
+  "features": [
+    {
+      "feature_name": "amount",
+      "psi": 0.0184,
+      "psi_drift": false,
+      "ks_statistic": 0.0362,
+      "ks_pvalue": 0.046384,
+      "ks_drift": false,
+      "is_drift_detected": false,
+      "reference_mean": 107.502,
+      "current_mean": 112.665
+    },
+    {
+      "feature_name": "location_lat",
+      "psi": 0.0789,
+      "psi_drift": false,
+      "ks_statistic": 0.0684,
+      "ks_pvalue": 3e-06,
+      "ks_drift": true,
+      "is_drift_detected": false,
+      "reference_mean": 36.601,
+      "current_mean": 35.83
+    },
+    {
+      "feature_name": "location_lon",
+      "psi": 0.0811,
+      "psi_drift": false,
+      "ks_statistic": 0.1034,
+      "ks_pvalue": 0.0,
+      "ks_drift": true,
+      "is_drift_detected": false,
+      "reference_mean": -103.549,
+      "current_mean": -100.755
+    }
+  ],
+  "recommendation": "SYSTEM_STABLE: Feature distributions align with baseline."
+}

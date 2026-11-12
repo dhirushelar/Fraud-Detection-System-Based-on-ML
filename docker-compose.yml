@@ -1,0 +1,103 @@
+# ==============================================================================
+# Fraud Detection System (FDS) - Production Docker Compose Orchestration
+# Author: Alpha
+# Services: Flask App & Dashboard, PostgreSQL 15, MLflow Tracking Server
+# ==============================================================================
+
+version: "3.9"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. CORE APPLICATION & REST API SERVICE
+  # ----------------------------------------------------------------------------
+  fds-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fds-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+      - DATABASE_URL=postgresql://fds_user:fds_secure_pass_2026@fds-db:5432/fraud_db
+      - SECRET_KEY=fds-production-super-secret-key-alpha-98765
+      - JWT_SECRET_KEY=fds-jwt-production-secret-token-key-alpha-12345
+      - JWT_ACCESS_EXPIRES_HOURS=8
+      - ARTIFACTS_DIR=ml/artifacts
+      - ACTIVE_MODEL_VERSION=v1.0.0
+      - MLFLOW_TRACKING_URI=http://fds-mlflow:5000
+      - RATELIMIT_DEFAULT=200 per minute
+      - RATELIMIT_STORAGE_URI=memory://
+    depends_on:
+      fds-db:
+        condition: service_healthy
+      fds-mlflow:
+        condition: service_started
+    volumes:
+      - ./ml/artifacts:/app/ml/artifacts
+      - ./data/raw:/app/data/raw
+    networks:
+      - fds-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ----------------------------------------------------------------------------
+  # 2. POSTGRESQL 15 RELATIONAL DATABASE
+  # ----------------------------------------------------------------------------
+  fds-db:
+    image: postgres:15-alpine
+    container_name: fds-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=fraud_db
+      - POSTGRES_USER=fds_user
+      - POSTGRES_PASSWORD=fds_secure_pass_2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init_schema.sql:/docker-entrypoint-initdb.d/01_init_schema.sql:ro
+    networks:
+      - fds-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fds_user -d fraud_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # 3. MLFLOW MODEL REGISTRY & EXPERIMENT TRACKING SERVER
+  # ----------------------------------------------------------------------------
+  fds-mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.10.0
+    container_name: fds-mlflow
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+    networks:
+      - fds-network
+
+volumes:
+  postgres_data:
+    driver: local
+  mlflow_data:
+    driver: local
+
+networks:
+  fds-network:
+    driver: bridge

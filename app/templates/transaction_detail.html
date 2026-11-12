@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Investigation #{{ tx.transaction_uid }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <a href="{{ url_for('dashboard.overview') }}" class="hover:text-white">Overview</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <a href="{{ url_for('dashboard.alerts_queue') }}" class="hover:text-white">Alert Queue</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-indigo-400 font-semibold">{{ tx.transaction_uid }}</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white font-mono">{{ tx.transaction_uid }}</h1>
+                {% if prediction and prediction.is_flagged %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-ban text-[11px]"></i> BLOCKED / FLAGGED
+                    </span>
+                {% else %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-check text-[11px]"></i> APPROVED
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Risk Score Highlight Pill -->
+        {% if prediction %}
+        <div class="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl px-5 py-3 shadow-sm">
+            <div>
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Risk Score</span>
+                <span class="text-2xl font-black font-mono {% if prediction.calibrated_risk_score >= 80 %}text-rose-400{% elif prediction.calibrated_risk_score >= 50 %}text-amber-400{% else %}text-emerald-400{% endif %}">
+                    {{ "{:.1f}".format(prediction.calibrated_risk_score) }} <span class="text-xs text-slate-400 font-normal">/ 100</span>
+                </span>
+            </div>
+            <div class="pl-3 border-l border-slate-800">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 block">Inference Latency</span>
+                <span class="text-sm font-mono text-slate-200 font-bold">{{ prediction.latency_ms }} ms</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Alert Audit Status Banner (if already reviewed) -->
+    {% if feedback %}
+    <div class="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/40 text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div>
+                <span class="font-bold text-white">Analyst Audit Recorded</span>
+                <p class="text-xs text-slate-300">
+                    Verdict: <strong class="text-indigo-300">{{ feedback.feedback_verdict }}</strong> • Reviewed at {{ feedback.reviewed_at.strftime('%Y-%m-%d %H:%M') if feedback.reviewed_at else 'Recently' }}
+                </p>
+                {% if feedback.notes %}
+                    <p class="text-xs text-slate-400 mt-1 italic">"{{ feedback.notes }}"</p>
+                {% endif %}
+            </div>
+        </div>
+        <span class="px-2.5 py-1 rounded bg-indigo-600/30 text-indigo-300 text-xs font-semibold">
+            In Training Feedback Buffer
+        </span>
+    </div>
+    {% endif %}
+
+    <!-- Context Information Grid (4 cards: Transaction, Customer, Merchant, Device & Geo) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Transaction Basics -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-sm space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-receipt text-indigo-400"></i> Financial Context
+            </h3>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Amount</span>
+                <span class="font-bold text-white font-mono text-base">${{ "{:,.2f}".format(tx.amount) }} {{ tx.currency }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Channel</span>
+                <span class="font-mono text-slate-200">{{ tx.channel }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+                <span class="text-slate-400">Timestamp</span>
+                <span class="font-mono text-xs text-slate-300">{{ tx.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+            </div>
+        </div>
+
+        <!-- Customer Profile -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-sm space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-user text-indigo-400"></i> Customer Profile
+            </h3>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">External ID</span>
+                <span class="font-mono text-slate-200 font-semibold">{{ customer.external_id if customer else "N/A" }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Home City</span>
+                <span class="text-slate-300">New York, NY</span>
+            </div>
+            <div class="flex justify-between py-1">
+                <span class="text-slate-400">Risk Profile</span>
+                <span class="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300">{{ customer.risk_status if customer else "NORMAL" }}</span>
+            </div>
+        </div>
+
+        <!-- Merchant Profile -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-sm space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-store text-indigo-400"></i> Merchant Details
+            </h3>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Merchant</span>
+                <span class="text-slate-200 font-semibold truncate max-w-[120px]">{{ merchant.name if merchant else "N/A" }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Category</span>
+                <span class="text-slate-300">{{ merchant.category if merchant else "general" }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+                <span class="text-slate-400">Baseline Risk</span>
+                <span class="font-mono text-xs text-slate-300">{{ merchant.risk_rating if merchant else 1.0 }}x</span>
+            </div>
+        </div>
+
+        <!-- Device & Location -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 text-sm space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-indigo-400"></i> Device & Geo
+            </h3>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Device</span>
+                <span class="font-mono text-xs text-slate-300 truncate max-w-[120px]">{{ tx.device_id or "Unknown" }}</span>
+            </div>
+            <div class="flex justify-between py-1 border-b border-slate-800/60">
+                <span class="text-slate-400">Coordinates</span>
+                <span class="font-mono text-xs text-slate-300">{{ "{:.2f}".format(tx.location_lat) if tx.location_lat else "N/A" }}, {{ "{:.2f}".format(tx.location_lon) if tx.location_lon else "N/A" }}</span>
+            </div>
+            <div class="flex justify-between py-1">
+                <span class="text-slate-400">IP Address</span>
+                <span class="font-mono text-xs text-slate-300">{{ tx.ip_address or "127.0.0.1" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explainability Section: SHAP Bar Chart & Reason Codes -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Plotly SHAP Chart (2 cols) -->
+        <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-indigo-400"></i> Explainable AI (TreeSHAP Waterfall Analysis)
+                </h3>
+                <span class="text-xs text-slate-400 font-mono">TreeSHAP Explainer</span>
+            </div>
+            <div id="shapChart" class="w-full h-80"></div>
+        </div>
+
+        <!-- Reason Codes Callout Panel -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+            <div>
+                <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-rose-400"></i> Primary Reason Codes
+                </h3>
+                <p class="text-xs text-slate-400 mb-4">Top contributors pushing the isolation score over decision threshold.</p>
+
+                <div class="space-y-3">
+                    {% if reason_codes %}
+                        {% for r in reason_codes %}
+                        <div class="p-3.5 rounded-xl border border-rose-500/20 bg-rose-950/20 text-xs">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold font-mono text-rose-300">{{ r.code if r.code is defined else 'ANOMALY_TRIGGER' }}</span>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 font-bold uppercase">{{ r.impact if r.impact is defined else 'HIGH' }}</span>
+                            </div>
+                            <p class="text-slate-300">{{ r.description if r.description is defined else r }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-4 rounded-xl border border-slate-800 bg-slate-800/30 text-xs text-slate-400 text-center">
+                            No specific anomaly threshold breached. Transaction conforms to expected spend distribution.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Model Version Badge -->
+            <div class="mt-6 pt-3 border-t border-slate-800 text-[11px] text-slate-500 flex justify-between">
+                <span>Model: {{ prediction.model_version.version_tag if prediction and prediction.model_version else 'v1.0.0' }}</span>
+                <span>Decision Cutoff: {{ prediction.model_version.decision_threshold if prediction and prediction.model_version else 81.5 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyst Feedback Submission Form -->
+    {% if alert %}
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+            <i class="fa-solid fa-clipboard-check text-indigo-400"></i> Analyst Ground-Truth Disposition
+        </h3>
+        <p class="text-xs text-slate-400 mb-5">
+            Your feedback closes the active learning loop. Confirmed verdicts are stored for continuous automated retraining.
+        </p>
+
+        <form action="{{ url_for('dashboard.submit_review', alert_id=alert.id) }}" method="POST" class="space-y-5">
+            <!-- Review Reason Tags Checkboxes -->
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                    Select Observed Risk Indicators:
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {% for tag, label in [
+                        ('AMOUNT_ANOMALY', 'Extreme Amount'),
+                        ('NEW_DEVICE', 'Unrecognized Device'),
+                        ('FOREIGN_LOCATION', 'Foreign / Geo Jump'),
+                        ('VELOCITY_BURST', 'Rapid Transaction Burst'),
+                        ('ODD_HOUR', 'Late Night Activity'),
+                        ('NEW_MERCHANT', 'First Time Merchant'),
+                        ('AUTHORIZED_USER', 'Customer Confirmed Legitimate'),
+                        ('CARD_STOLEN', 'Card Reported Compromised')
+                    ] %}
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 cursor-pointer transition-colors">
+                        <input type="checkbox" name="reason_tags" value="{{ tag }}" class="rounded bg-slate-900 border-slate-600 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-slate-200">{{ label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Notes Field -->
+            <div>
+                <label for="notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                    Analyst Investigation Audit Notes:
+                </label>
+                <textarea id="notes" name="notes" rows="2" 
+                          placeholder="e.g. Spoke with cardholder via SMS verification; confirmed unauthorized login from unexpected country." 
+                          class="w-full rounded-xl bg-slate-950 border border-slate-700/80 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <!-- Action Buttons Grid -->
+            <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center gap-3">
+                <!-- Red Confirm Fraud -->
+                <button type="submit" name="verdict" value="TRUE_FRAUD" 
+                        onclick="this.form.status.value='RESOLVED_FRAUD';"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-all shadow-md shadow-rose-600/30">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Confirm Fraud (True Positive)</span>
+                </button>
+
+                <!-- Green Dismiss False Positive -->
+                <button type="submit" name="verdict" value="FALSE_POSITIVE" 
+                        onclick="this.form.status.value='RESOLVED_FALSE_POSITIVE';"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all shadow-md shadow-emerald-600/30">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Dismiss as False Positive</span>
+                </button>
+
+                <!-- Yellow Investigating -->
+                <button type="submit" name="verdict" value="SUSPICIOUS_UNCONFIRMED" 
+                        onclick="this.form.status.value='INVESTIGATING';"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/40 font-semibold text-xs transition-all">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                    <span>Mark Under Investigation</span>
+                </button>
+
+                <input type="hidden" name="status" value="RESOLVED_FRAUD">
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Raw Engineered Feature Snapshot (Collapsible) -->
+    <details class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 text-sm">
+        <summary class="cursor-pointer font-bold text-slate-300 hover:text-white flex items-center justify-between">
+            <span class="flex items-center gap-2">
+                <i class="fa-solid fa-code text-indigo-400"></i> Engineered Feature Vector Snapshot
+            </span>
+            <span class="text-xs text-slate-500 font-mono">Click to toggle raw values</span>
+        </summary>
+        <div class="mt-4 pt-3 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 font-mono text-xs">
+            {% for feat, val in raw_features.items() %}
+            <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800/70">
+                <span class="text-slate-400 block truncate" title="{{ feat }}">{{ feat }}</span>
+                <span class="font-bold text-white mt-1 block">
+                    {% if val is float %}{{ "{:.4f}".format(val) }}{% else %}{{ val }}{% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const shapData = {{ shap_chart_json | safe }};
+        const config = { responsive: true, displayModeBar: false };
+        Plotly.newPlot('shapChart', shapData.data, shapData.layout, config);
+    });
+</script>
+{% endblock %}

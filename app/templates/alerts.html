@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Live Alert Queue{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Breadcrumbs & Title -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs text-slate-400 mb-1">
+                <a href="{{ url_for('dashboard.overview') }}" class="hover:text-white">Overview</a>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                <span class="text-indigo-400 font-semibold">Alert Queue</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">Analyst Alert Queue</h1>
+            <p class="text-sm text-slate-400 mt-1">Review, audit, and provide ground-truth feedback on transactions flagged by Isolation Forest.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300">
+                Total Records: <strong class="text-white">{{ pagination.total }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Filter Control Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Status Tabs -->
+        <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs text-slate-400 font-semibold mr-1">Status:</span>
+            {% for s in ['ALL', 'OPEN', 'INVESTIGATING', 'RESOLVED_FRAUD', 'RESOLVED_FALSE_POSITIVE'] %}
+            <a href="{{ url_for('dashboard.alerts_queue', status=s, severity=current_severity) }}"
+               class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all {% if current_status == s %}bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/30{% else %}bg-slate-800/80 hover:bg-slate-800 text-slate-300{% endif %}">
+               {{ s.replace('_', ' ') }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Severity Filter Dropdown -->
+        <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-semibold">Severity:</span>
+            <div class="flex items-center gap-1">
+                {% for sev in ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
+                <a href="{{ url_for('dashboard.alerts_queue', status=current_status, severity=sev) }}"
+                   class="px-2.5 py-1 rounded text-xs font-medium transition-all {% if current_severity == sev %}bg-slate-700 text-white font-bold border border-slate-500{% else %}bg-slate-800/60 hover:bg-slate-800 text-slate-400{% endif %}">
+                   {{ sev }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm">
+        {% if alerts %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800 pb-3">
+                        <th class="py-3 px-3">Alert UID</th>
+                        <th class="py-3 px-3">Severity</th>
+                        <th class="py-3 px-3">Status</th>
+                        <th class="py-3 px-3">Transaction UID</th>
+                        <th class="py-3 px-3">Cardholder</th>
+                        <th class="py-3 px-3">Merchant</th>
+                        <th class="py-3 px-3">Amount</th>
+                        <th class="py-3 px-3">Risk Score</th>
+                        <th class="py-3 px-3">Flagged Timestamp</th>
+                        <th class="py-3 px-3 text-right">Investigation</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-mono text-xs">
+                    {% for a in alerts %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-3 px-3 font-bold text-slate-200">{{ a.alert_uid }}</td>
+                        <td class="py-3 px-3">
+                            {% if a.severity == 'CRITICAL' %}
+                                <span class="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">CRITICAL</span>
+                            {% elif a.severity == 'HIGH' %}
+                                <span class="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-bold">HIGH</span>
+                            {% elif a.severity == 'MEDIUM' %}
+                                <span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold">MEDIUM</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">LOW</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-sans font-medium {% if a.status == 'OPEN' %}bg-amber-500/10 text-amber-300 border border-amber-500/20{% elif a.status == 'INVESTIGATING' %}bg-blue-500/10 text-blue-300 border border-blue-500/20{% elif a.status == 'RESOLVED_FRAUD' %}bg-rose-500/10 text-rose-300 border border-rose-500/20{% else %}bg-emerald-500/10 text-emerald-300 border border-emerald-500/20{% endif %}">
+                                {{ a.status.replace('_', ' ') }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 font-mono text-slate-300">{{ a.transaction_uid }}</td>
+                        <td class="py-3 px-3 font-sans text-slate-300">{{ a.customer_id }}</td>
+                        <td class="py-3 px-3 font-sans text-slate-300 max-w-xs truncate">{{ a.merchant_name }}</td>
+                        <td class="py-3 px-3 font-bold text-white">${{ "{:,.2f}".format(a.amount) }}</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded font-bold {% if a.risk_score >= 80 %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% elif a.risk_score >= 50 %}bg-amber-500/10 text-amber-400 border border-amber-500/20{% else %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% endif %}">
+                                {{ "{:.1f}".format(a.risk_score) }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 text-slate-400 font-sans">{{ a.created_at }}</td>
+                        <td class="py-3 px-3 text-right">
+                            <a href="{{ url_for('dashboard.transaction_detail', transaction_id=a.transaction_id) }}" 
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-sans font-semibold transition-all shadow-sm shadow-indigo-600/30">
+                                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                                <span>Audit</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        {% if pagination.pages > 1 %}
+        <div class="mt-6 flex items-center justify-between border-t border-slate-800 pt-4 text-xs">
+            <span class="text-slate-400">
+                Page <strong class="text-white">{{ pagination.page }}</strong> of <strong class="text-white">{{ pagination.pages }}</strong>
+            </span>
+            <div class="flex items-center gap-2">
+                {% if pagination.has_prev %}
+                <a href="{{ url_for('dashboard.alerts_queue', page=pagination.prev_num, status=current_status, severity=current_severity) }}"
+                   class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">
+                   <i class="fa-solid fa-arrow-left mr-1"></i> Previous
+                </a>
+                {% endif %}
+                {% if pagination.has_next %}
+                <a href="{{ url_for('dashboard.alerts_queue', page=pagination.next_num, status=current_status, severity=current_severity) }}"
+                   class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">
+                   Next <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="py-16 text-center text-slate-500 text-sm">
+            <i class="fa-solid fa-filter-circle-xmark text-3xl mb-3 text-slate-600"></i>
+            <p>No alerts matching current filter: <strong>Status = {{ current_status }}</strong>, <strong>Severity = {{ current_severity }}</strong>.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
