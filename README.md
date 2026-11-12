@@ -167,8 +167,8 @@ FDS/
 
 1. **Clone repository and setup environment:**
    ```bash
-   git clone https://github.com/alpha-org/fraud-detection-system.git
-   cd fraud-detection-system
+   git clone https://github.com/dhirushelar/Fraud-Detection-System-Based-on-ML.git
+   cd Fraud-Detection-System-Based-on-ML
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    make setup
@@ -204,6 +204,26 @@ docker-compose up --build -d
 - **REST API Health**: [http://localhost:5000/api/v1/health](http://localhost:5000/api/v1/health)
 - **MLflow Registry**: [http://localhost:5001](http://localhost:5001)
 - **PostgreSQL Database**: `localhost:5432` (`db: fraud_db`, `user: fds_user`)
+
+### One-Click Free Online Cloud Deployment
+
+You can deploy this repository live online in under 3 minutes on free-tier cloud platforms:
+
+#### Option A: Render (1-Click Deployment)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/dhirushelar/Fraud-Detection-System-Based-on-ML)
+
+1. Click the button above or open [Render Blueprint](https://render.com/deploy?repo=https://github.com/dhirushelar/Fraud-Detection-System-Based-on-ML).
+2. Render will automatically read [`render.yaml`](render.yaml) and [`Procfile`](Procfile) to build the app with Python 3.11 and Gunicorn.
+3. Your live API and Dashboard will be accessible immediately with automatic SSL (`https://<app-name>.onrender.com`).
+
+#### Option B: Railway
+1. Navigate to [Railway](https://railway.app/new).
+2. Choose **Deploy from GitHub repo** and select `dhirushelar/Fraud-Detection-System-Based-on-ML`.
+3. Railway detects the production [`Dockerfile`](Dockerfile) and deploys with a public HTTPS domain.
+
+#### Option C: Koyeb / Fly.io / Hugging Face Spaces
+- **Koyeb**: New App &rarr; GitHub &rarr; Select `dhirushelar/Fraud-Detection-System-Based-on-ML` &rarr; Port `5000`.
+- **Fly.io**: Run `fly launch` to deploy using the multi-stage Dockerfile.
 
 ---
 

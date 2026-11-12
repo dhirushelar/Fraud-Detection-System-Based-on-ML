@@ -46,9 +46,44 @@ def create_app(config_name: str | None = None) -> Flask:
             "environment": app.config.get("FLASK_ENV", "production"),
         }), 200
 
-    # Auto-create tables if running in SQLite or testing mode
+    # Auto-create tables and bootstrap default credentials if unseeded
     with app.app_context():
-        if "sqlite" in app.config.get("SQLALCHEMY_DATABASE_URI", ""):
+        try:
             db.create_all()
+            from app.models.user import AuthUser
+            from app.models.prediction import ModelVersion
+
+            if not AuthUser.query.filter_by(username="admin").first():
+                admin = AuthUser(
+                    username="admin",
+                    email="admin@alpha-fds.internal",
+                    role="admin",
+                    is_active=True,
+                )
+                admin.set_password("AdminSecretPass123!")
+                db.session.add(admin)
+
+            if not AuthUser.query.filter_by(username="analyst").first():
+                analyst = AuthUser(
+                    username="analyst",
+                    email="analyst@alpha-fds.internal",
+                    role="analyst",
+                    is_active=True,
+                )
+                analyst.set_password("AnalystSecretPass123!")
+                db.session.add(analyst)
+
+            if not ModelVersion.query.filter_by(version_tag="v1.0.0").first():
+                mv = ModelVersion(
+                    version_tag="v1.0.0",
+                    model_type="IsolationForest",
+                    threshold=81.5,
+                    is_active=True,
+                )
+                db.session.add(mv)
+
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     return app
